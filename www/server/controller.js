@@ -18,11 +18,21 @@ var controladorFunciones = {
 
 		var competenciaId = request.params.id;
 		
+		// CHECK IF Competencia WITH GIVEN ID EXIST IN THE DB
+
+		database.query("select count(*) as total from competencia where id = 4",function(error,datos){			
+			console.log(datos.total);
+			if(datos.total != 0){
+				return response.send(418,"NO EXISTE LA COMPETENCIA");
+			}
+		});
+
+		// IF IT EXIST, DO THE QUERY 
 		var queryString = "select competencia.id as competencia_id, competencia.nombre, pelicula.id as peli_id, pelicula.titulo, pelicula.poster from pelicula join competencia where competencia.id = " + competenciaId+" order by rand() limit 2";
 		
 		database.query(queryString,function(error,datos){			
 			if(error){
-				return response.send("ERRRRRROORRRRRR")
+				return response.send(500,"ERRRRRROORRRRRR")
 			}
 
 			var resultados = {
