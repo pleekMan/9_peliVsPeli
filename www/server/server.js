@@ -14,6 +14,7 @@ app.use(bodyParser.urlencoded({
 app.use(bodyParser.json());
 
 app.get("/competencias/:id/peliculas", controller.getParaVotar);
+app.post("/competencias/:idCompetencia/voto", controller.votar);
 app.get("/competencias", controller.getCompetencias);
 
 
@@ -23,5 +24,5 @@ var puerto = '8080';
 
 
 app.listen(puerto, function () {
-  console.log( "-|| Escuchando en el puerto\n-||=========" + puerto );
+  console.log( "-|| Escuchando en el puerto: " + puerto + "\n-||============" );
 });
