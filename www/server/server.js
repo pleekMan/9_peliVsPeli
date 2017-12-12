@@ -15,6 +15,8 @@ app.use(bodyParser.json());
 
 app.get("/competencias/:id/peliculas", controller.getParaVotar);
 app.post("/competencias/:idCompetencia/voto", controller.votar);
+app.get("/competencias/:idCompetencia/resultados", controller.getResultados);
+
 app.get("/competencias", controller.getCompetencias);
 
 

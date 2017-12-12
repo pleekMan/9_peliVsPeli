@@ -59,37 +59,68 @@ var controladorFunciones = {
 		console.log("-|| Body: idPelicula (votada): " + idPelicula);
 		console.log("-|| urlParam: idCompetencia: " + idCompetencia);
 		
-		database.query("select count(*) from voto where id_competencia = "+idCompetencia+" AND id_pelicula = "+idPelicula,function(error,existeDato){			
-			var existe = existeDato[0].existe;
-			console.log("-| Existe?: " + existe);
-
-			// IF THE Competencia DOES NOT EXISTS -> INSERT NEW REGISTRY
-			if(existe == 0){
-				console.log("-| INSERTING INTO DB");
-				var queryString = "INSERT INTO voto(id_pelicula,id_competencia,votos) VALUES ("+idPelicula+","+idCompetencia+",1)";
-				
-				database.query(queryString,function(error,datos){			
-					if(error){
-						return response.send(500,"ERRRRRROORRRRRR")
-					}
-
-					response.send(200,datos);
-				});
-
-			} else {
-			// ELSE IF THE Competencia EXISTS -> UPDATE REGISTRY
-			console.log("-| UPDATING DB REGISTRY");			
-				var queryString = "UPDATE voto SET votos = votos+1 where id_competencia = "+idCompetencia+" AND id_pelicula = "+idPelicula;
-				database.query(queryString,function(error,datos){			
-					if(error){
-						return response.send(500,"ERRRRRROORRRRRR")
-					}
-
-					response.send(200,datos);
-				});
-				
+		console.log("-| INSERTING INTO DB");
+		var queryString = "INSERT INTO voto(id_pelicula,id_competencia) VALUES ("+idPelicula+","+idCompetencia+")";
+		
+		database.query(queryString,function(error,datos){			
+			if(error){
+				return response.send(500,"ERRRRRROORRRRRR")
 			}
-		});			
+
+			response.send(200,datos);
+		});					
+	},
+
+
+	getResultados: function(request, response){
+		var idCompetencia = request.params.idCompetencia;
+		console.log("-|| GET RESULTADOS: En Request:");		
+		console.log("-|| urlParam -> idCompetencia: " + idCompetencia);
+
+		
+		// NEW STRING LITERALS IN JS ECMA6
+		/*
+		var s = 5;
+		var s1 = `hola ${s}`
+		*/
+
+		console.log("-| SELECTING FROM DB");
+		var queryString = `select count(*) as podio, id_pelicula, titulo, competencia.nombre, pelicula.poster 
+		from voto
+		join pelicula ON voto.id_pelicula = pelicula.id
+		join competencia ON voto.id_competencia = competencia.id
+		where voto.id_competencia = ${idCompetencia}
+		group by id_competencia, id_pelicula
+		order by podio DESC
+		limit 3`;
+		
+		console.log("-| QUERY: " + queryString);
+		
+
+
+
+		database.query(queryString,function(error,datos){			
+			if(error){
+				return response.send(500,"ERRRRRROORRRRRR")
+			}
+
+			var returnObject = {
+				competencia:datos[0].nombre,
+				resultados:[],
+			}
+
+			datos.forEach(function(element, index){
+				var result = {
+					pelicula_id:datos[index].id_pelicula,
+					poster:datos[index].poster,
+					titulo:datos[index].titulo,
+					votos: datos[index].podio,
+				}
+				returnObject.resultados.push(result);
+			});
+
+			response.send(200,returnObject);
+		});					
 	}
 }
 
