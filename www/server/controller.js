@@ -6,10 +6,53 @@ var controladorFunciones = {
 
 		database.query("SELECT * FROM competencia", function(error,datos){
 			if(error){
-				return response.send("ERRRRRROORRRRRR")
+				return response.status(500).send("ERRRRRROORRRRRR")
 			}
 			//console.log(datos[0]);			
 			response.send(200, datos);
+		});
+
+	},
+
+	getDatosDeCompetencia: function(request, response){
+		
+		 //HACER ESTO, FIJARSE EL ENDPOINT EN competencia.obtenerCompetenecia
+		var idCompetencia = request.params.id;
+		var queryString = `select id_pelicula, competencia.nombre as comp_nombre, genero.nombre as genero, actor.nombre as actorNombre, director.nombre as directorNombre  
+		from voto
+		join pelicula ON voto.id_pelicula = pelicula.id
+		join competencia ON voto.id_competencia = competencia.id
+		join genero ON pelicula.genero_id = genero.id
+		join actor_pelicula ON actor_pelicula.pelicula_id = pelicula.id
+		join actor on actor.id = actor_pelicula.actor_id
+		join director_pelicula ON director_pelicula.pelicula_id = pelicula.id
+		join director on director_pelicula.director_id = director.id
+		where voto.id_competencia = ${idCompetencia}
+		group by id_competencia, id_pelicula
+		limit 1;`;
+
+		database.query(queryString, function(error,datos){
+			if(error){
+				return response.status(500).send("ERRRRRROORRRRRR")
+			}
+			//console.log(datos[0]);
+
+			var toFrontEnd = {};
+
+			if(datos.length != 0){
+
+				toFrontEnd.nombre = datos[0].comp_nombre;
+				toFrontEnd.genero_nombre = datos[0].genero;
+				toFrontEnd.actor_nombre = datos[0].actorNombre;
+				toFrontEnd.director_nombre = datos[0].directorNombre;
+
+				return response.send(200, toFrontEnd);
+			} else {
+				return response.status(404).send("DATOS DE COMPETENCIA VACIOS")								
+			}
+			
+			
+			
 		});
 
 	},
@@ -121,7 +164,42 @@ var controladorFunciones = {
 
 			response.send(200,returnObject);
 		});					
-	}
+	},
+
+	crearCompetencia: function(request, response){
+		var nombreComp = request.body.nombre;
+		console.log("-|| CREAR COMPETENCIA: request.body.nombre: " +  nombreComp);						
+		var queryString = "INSERT INTO competencia(nombre) VALUES ('"+nombreComp+"')";
+
+		database.query(queryString,function(error,datos){
+			if(error){
+				return response.status(500).send("ERRRRRROORRRRRR")
+			}
+			response.send(200,datos);
+		});		
+			
+
+	},
+
+	reiniciarCompetencia: function(request, response){
+		var idCompetencia = request.params.idCompetencia;
+		console.log("-|| ELIMINAR COMPETENCIA: " +  idCompetencia);						
+		
+		//var queryString = "DELETE FROM competencia WHERE id="+idCompetencia;
+		var queryString = "DELETE FROM voto WHERE id_competencia="+idCompetencia;
+
+		
+		database.query(queryString,function(error,datos){
+			if(error){
+				return response.status(500).send("ERROR DESCONOCIDO DE DATABASE")
+			}
+
+			response.send(200); // NO DEVOLVEMOS MENSAJE, EN ESTE CASO, PORQUE EL CLIENTE (reiniciar.JS) NO LEE EL MENSAJE, SOLO EL CODIGO DE ERROR (success:)
+			
+		});		
+			
+
+	},
 }
 
 module.exports = controladorFunciones;

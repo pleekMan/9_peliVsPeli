@@ -106,7 +106,6 @@ function CompetenciasController () {
 	// Este método envía el voto seleccionado (la elección de una película) en una competencia
 	this.votar = function (idCompetencia, idPelicula){
 		// Se arma el objeto data a enviar como body en el POST a la api
-		console.log("-|| VOTANDING - Pre bodyData: " + idPelicula);		
 		var data = {'idPelicula': idPelicula};
 		console.log("-|| VOTANDING: " + data.idPelicula);
 		// Se realiza el post a la api
@@ -187,7 +186,7 @@ function CompetenciasController () {
 			// Se carga el título de la película
 			$(divResultado+" .titulo").text((data.resultados)[i].titulo);
 			// Se carga la cantidad de votor recibidos por la película en esta competencia
-			var votoOVotos = ((data.resultados)[i].votos > 1 ) ? 'VOTOS' : 'VOTO';
+			var votoOVotos = ((data	.resultados)[i].votos > 1 ) ? 'VOTOS' : 'VOTO';
 			$(divResultado+" .votos").text((data.resultados)[i].votos + ' ' + votoOVotos);
   	}
 		for(i; i < 3; i++){
