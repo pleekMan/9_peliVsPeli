@@ -69,25 +69,41 @@ var controladorFunciones = {
 				return response.send(418,"NO EXISTE LA COMPETENCIA");
 			} else {
 
-				// IF IT EXIST, DO THE QUERY 
-				var queryString = "select competencia.id as competencia_id, competencia.nombre, pelicula.id as id, pelicula.titulo, pelicula.poster from pelicula join competencia where competencia.id = " + competenciaId+" order by rand() limit 2";
 				
-				database.query(queryString,function(error,datos){			
+				// IF IT EXIST, CHECK IF competencia IS ATTACHED TO A genero
+				database.query("select genero_id from competencia where competencia.id =" + competenciaId,function(error,datos){			
 					if(error){
-						return response.send(500,"ERRRRRROORRRRRR")
+						return response.send(500,"ERROR BUSCANDO EL LINK A GENERO DE LA COMPETENCIA")
 					}
 
-					var resultados = {
-						competencia:datos[0].nombre,
-						peliculas: [],
+					var queryString = "";					
+					var linkToGenero = datos[0];
+
+					if( linkToGenero == 0){
+						queryString = "select competencia.id as competencia_id, competencia.nombre, pelicula.id as id, pelicula.titulo, pelicula.poster from pelicula join competencia where competencia.id = " + competenciaId+" order by rand() limit 2";						
+					} else {
+						queryString = "select competencia.id as competencia_id, competencia.nombre, pelicula.id as id, pelicula.titulo, pelicula.poster from pelicula join competencia where competencia.id = " + competenciaId+" AND pelicula.genero_id = competencia.genero_id order by rand() limit 2";												
 					}
-					resultados.peliculas.push(datos[0]);
-					resultados.peliculas.push(datos[1]);
-					
 
-					response.send(200,resultados);
+					database.query(queryString,function(error,datos){			
+						if(error){
+							return response.send(500,"ERRRRRROORRRRRR")
+						}
+	
+						var resultados = {
+							competencia:datos[0].nombre,
+							peliculas: [],
+						}
+						resultados.peliculas.push(datos[0]);
+						resultados.peliculas.push(datos[1]);
+						
+	
+						response.send(200,resultados);
+	
+					});
+				
+				});					
 
-				});
 			}
 		});
 
@@ -168,8 +184,9 @@ var controladorFunciones = {
 
 	crearCompetencia: function(request, response){
 		var nombreComp = request.body.nombre;
-		console.log("-|| CREAR COMPETENCIA: request.body.nombre: " +  nombreComp);						
-		var queryString = "INSERT INTO competencia(nombre) VALUES ('"+nombreComp+"')";
+		var idGenero = request.body.genero;
+		console.log("-|| CREAR COMPETENCIA: "+ request.body);						
+		var queryString = "INSERT INTO competencia(nombre, genero_id) VALUES ('"+nombreComp+"',"+idGenero+")";
 
 		database.query(queryString,function(error,datos){
 			if(error){
@@ -196,6 +213,20 @@ var controladorFunciones = {
 
 			response.send(200); // NO DEVOLVEMOS MENSAJE, EN ESTE CASO, PORQUE EL CLIENTE (reiniciar.JS) NO LEE EL MENSAJE, SOLO EL CODIGO DE ERROR (success:)
 			
+		});
+	},
+
+	getGeneros: function(request, response){
+		
+		console.log("-|| GETTING GENEROS LIST: ");						
+		var queryString = "SELECT * FROM genero";
+
+		database.query(queryString,function(error,datos){
+			if(error){
+				return response.status(500).send("ERRRRRROORRRRRR")
+			}
+
+			response.send(200,datos);
 		});		
 			
 
