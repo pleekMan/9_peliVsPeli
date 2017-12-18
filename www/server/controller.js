@@ -4,7 +4,7 @@ var controladorFunciones = {
 
 	getCompetencias: function(request, response){
 
-		database.query("SELECT * FROM competencia", function(error,datos){
+		database.query("SELECT * FROM competencia WHERE activa=1", function(error,datos){
 			if(error){
 				return response.status(500).send("ERRRRRROORRRRRR")
 			}
@@ -16,7 +16,6 @@ var controladorFunciones = {
 
 	getDatosDeCompetencia: function(request, response){
 		
-		 //HACER ESTO, FIJARSE EL ENDPOINT EN competencia.obtenerCompetenecia
 		var idCompetencia = request.params.id;
 		var queryString = `select id_pelicula, competencia.nombre as comp_nombre, genero.nombre as genero, actor.nombre as actorNombre, director.nombre as directorNombre  
 		from voto
@@ -69,6 +68,8 @@ var controladorFunciones = {
 				return response.send(418,"NO EXISTE LA COMPETENCIA");
 			} else {
 
+				HAY QUE GET LOS PARAMS DE CREACION DE LA COMPETENCIA (genero, director, actor) Y GENERAR LA QUERY-STRING A PARTIR DE ACA
+				REEMPLAZAR LA QUERY DE ABAJO POR "select competencia.genero_id, competencia.director_id, competencia.actor_id from competencia where competencia.id = "+competenciaId+";"
 				
 				// IF IT EXIST, CHECK IF competencia IS ATTACHED TO A genero
 				database.query("select genero_id from competencia where competencia.id =" + competenciaId,function(error,datos){			
@@ -185,22 +186,61 @@ var controladorFunciones = {
 	crearCompetencia: function(request, response){
 		var nombreComp = request.body.nombre;
 		var idGenero = request.body.genero;
-		console.log("-|| CREAR COMPETENCIA: "+ request.body);						
-		var queryString = "INSERT INTO competencia(nombre, genero_id) VALUES ('"+nombreComp+"',"+idGenero+")";
+		var idDirector = request.body.director;
+		var idActor = request.body.actor;
 
-		database.query(queryString,function(error,datos){
-			if(error){
-				return response.status(500).send("ERRRRRROORRRRRR")
+		// GENERAR LA QUERY STRING PARA CHECKEAR SI EXISTEN PELICULAS DENTRO DE LOS PARAMETROS PARA LA COMPETENCIA A CREAR
+		var checkIfCombinationExistQueryString = `select count(*) as existe from actor
+		join actor_pelicula on actor_pelicula.actor_id = actor.id
+		join pelicula on actor_pelicula.pelicula_id = pelicula.id
+		join director_pelicula on director_pelicula.pelicula_id = pelicula.id
+		join director on director_pelicula.director_id = director.id
+		join genero on pelicula.genero_id = genero.id `
+
+		if(idGenero != 0 || idDirector != 0 || idActor != 0){
+			checkIfCombinationExistQueryString += "where";
+
+			if(idGenero != 0){
+				checkIfCombinationExistQueryString += " genero.id = " + idGenero + " AND";
 			}
-			response.send(200,datos);
-		});		
-			
 
+			if(idDirector != 0){
+				checkIfCombinationExistQueryString += " director.id = " + idDirector + " AND";
+			}
+
+			if(idActor != 0){
+				checkIfCombinationExistQueryString += " actor.id = " + idActor + " AND";
+			}
+
+			checkIfCombinationExistQueryString = checkIfCombinationExistQueryString.slice(0,-3);
+		}
+		console.log("-|| QueryString: " + checkIfCombinationExistQueryString);
+
+		database.query(checkIfCombinationExistQueryString,function(error,datos){
+			if(error){
+				return response.status(500).send("-||ERROR AL APENAS QUERIEAR")
+			}
+			console.log("-||Existe ESA COMBINACION: " + datos[0].existe + " REGISTROS");
+			if(datos[0].existe == 0){
+				return response.status(500).send("-||NO EXISTE ESA COMBINACION PARA CREAR UNA COMPETENCIA")
+			} else {
+
+				console.log("-|| CREAR COMPETENCIA: "+ request.body);						
+				var queryString = "INSERT INTO competencia(nombre, genero_id, director_id, actor_id, activa) VALUES ('"+nombreComp+"',"+idGenero+","+idDirector+","+idActor+",1)";
+		
+				database.query(queryString,function(error,datos){
+					if(error){
+						return response.status(500).send("ERROR CREANDO LA COMPETENCIA")
+					}
+					response.send(200,datos);
+				});	
+			}
+		});
 	},
 
 	reiniciarCompetencia: function(request, response){
 		var idCompetencia = request.params.idCompetencia;
-		console.log("-|| ELIMINAR COMPETENCIA: " +  idCompetencia);						
+		console.log("-|| REINICIAR COMPETENCIA: " +  idCompetencia);						
 		
 		//var queryString = "DELETE FROM competencia WHERE id="+idCompetencia;
 		var queryString = "DELETE FROM voto WHERE id_competencia="+idCompetencia;
@@ -230,6 +270,54 @@ var controladorFunciones = {
 		});		
 			
 
+	},
+
+	getDirectores: function(request, response){
+		
+		console.log("-|| GETTING DIRECTORES LIST: ");						
+		var queryString = "SELECT * FROM director";
+
+		database.query(queryString,function(error,datos){
+			if(error){
+				return response.status(500).send("ERRRRRROORRRRRR")
+			}
+			response.send(200,datos);
+		});		
+			
+
+	},
+
+	getActores: function(request, response){
+		
+		console.log("-|| GETTING ACTORES LIST: ");						
+		var queryString = "SELECT * FROM actor";
+
+		database.query(queryString,function(error,datos){
+			if(error){
+				return response.status(500).send("ERRRRRROORRRRRR")
+			}
+			response.send(200,datos);
+		});		
+			
+
+	},
+
+	eliminarCompetencia: function(request, response){
+		var idCompetencia = request.params.idCompetencia;
+		console.log("-|| ELIMINAR COMPETENCIA: " +  idCompetencia);						
+		
+		//var queryString = "DELETE FROM competencia WHERE id="+idCompetencia;
+		var queryString = "UPDATE competencia SET activa = 0 WHERE id="+idCompetencia+";";
+
+		
+		database.query(queryString,function(error,datos){
+			if(error){
+				return response.status(500).send("ERROR DESCONOCIDO DE DATABASE")
+			}
+
+			response.send(200); // NO DEVOLVEMOS MENSAJE, EN ESTE CASO, PORQUE EL CLIENTE (reiniciar.JS) NO LEE EL MENSAJE, SOLO EL CODIGO DE ERROR (success:)
+			
+		});
 	},
 }
 

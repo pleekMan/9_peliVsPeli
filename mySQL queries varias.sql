@@ -35,3 +35,7 @@ select id_pelicula, titulo, competencia.nombre, genero.nombre, actor_pelicula.id
 select competencia.id as competencia_id, competencia.nombre, pelicula.id as id, pelicula.titulo, pelicula.poster from pelicula join competencia where competencia.id = 8 AND pelicula.genero_id = competencia.genero_id order by rand() limit 2;
 
 select genero_id from competencia where competencia.id = 6;
+
+update competencia set actor_id = 0;
+
+select pelicula.titulo, pelicula.director from pelicula where pelicula.director = "Aaron Blaise";
