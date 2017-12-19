@@ -19,8 +19,10 @@ app.get("/competencias/:idCompetencia/resultados", controller.getResultados);
 app.get("/competencias/:id", controller.getDatosDeCompetencia);
 app.get("/competencias", controller.getCompetencias);
 app.post("/competencias", controller.crearCompetencia);
-app.delete("/competencias/:idCompetencia/votos", controller.reiniciarCompetencia)
-app.delete("/competencias/:idCompetencia", controller.eliminarCompetencia)
+app.delete("/competencias/:idCompetencia/votos", controller.reiniciarCompetencia);
+app.delete("/competencias/:idCompetencia", controller.eliminarCompetencia);
+app.put("/competencias/:idCompetencia", controller.editarCompetencia)
+
 
 app.get("/generos", controller.getGeneros);
 app.get("/directores", controller.getDirectores);

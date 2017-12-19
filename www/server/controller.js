@@ -17,6 +17,7 @@ var controladorFunciones = {
 	getDatosDeCompetencia: function(request, response){
 		
 		var idCompetencia = request.params.id;
+		/*
 		var queryString = `select id_pelicula, competencia.nombre as comp_nombre, genero.nombre as genero, actor.nombre as actorNombre, director.nombre as directorNombre  
 		from voto
 		join pelicula ON voto.id_pelicula = pelicula.id
@@ -29,8 +30,11 @@ var controladorFunciones = {
 		where voto.id_competencia = ${idCompetencia}
 		group by id_competencia, id_pelicula
 		limit 1;`;
+		*/
 
-		database.query(queryString, function(error,datos){
+		var getDatosIDs = "select competencia.genero_id, competencia.director_id, competencia.actor_id from competencia where competencia.id =" + competenciaId;
+
+		database.query(getDatosIDs, function(error,datos){
 			if(error){
 				return response.status(500).send("ERRRRRROORRRRRR")
 			}
@@ -68,25 +72,43 @@ var controladorFunciones = {
 				return response.send(418,"NO EXISTE LA COMPETENCIA");
 			} else {
 
-				HAY QUE GET LOS PARAMS DE CREACION DE LA COMPETENCIA (genero, director, actor) Y GENERAR LA QUERY-STRING A PARTIR DE ACA
-				REEMPLAZAR LA QUERY DE ABAJO POR "select competencia.genero_id, competencia.director_id, competencia.actor_id from competencia where competencia.id = "+competenciaId+";"
+				//TODO: HAY QUE GET LOS PARAMS DE CREACION DE LA COMPETENCIA (genero, director, actor) Y GENERAR LA QUERY-STRING A PARTIR DE ACA
+				//REEMPLAZAR LA QUERY DE ABAJO POR "select competencia.genero_id, competencia.director_id, competencia.actor_id from competencia where competencia.id = "+competenciaId+";"
 				
-				// IF IT EXIST, CHECK IF competencia IS ATTACHED TO A genero
-				database.query("select genero_id from competencia where competencia.id =" + competenciaId,function(error,datos){			
+				// IF IT EXIST, CHECK IF competencia has genero/director/actor attributes, GETTING THE IDs
+				var getCompetenciaAttributesIDQueryString = "select competencia.genero_id, competencia.director_id, competencia.actor_id from competencia where competencia.id =" + competenciaId;
+				database.query(getCompetenciaAttributesIDQueryString,function(error,datos){			
 					if(error){
-						return response.send(500,"ERROR BUSCANDO EL LINK A GENERO DE LA COMPETENCIA")
+						return response.send(500,"ERROR BUSCANDO ATTRIBUTOS DE LA COMPETENCIA")
 					}
 
-					var queryString = "";					
-					var linkToGenero = datos[0];
+					//response.send(200,datos);
 
-					if( linkToGenero == 0){
-						queryString = "select competencia.id as competencia_id, competencia.nombre, pelicula.id as id, pelicula.titulo, pelicula.poster from pelicula join competencia where competencia.id = " + competenciaId+" order by rand() limit 2";						
-					} else {
-						queryString = "select competencia.id as competencia_id, competencia.nombre, pelicula.id as id, pelicula.titulo, pelicula.poster from pelicula join competencia where competencia.id = " + competenciaId+" AND pelicula.genero_id = competencia.genero_id order by rand() limit 2";												
+					var finalPeliculasQuery = `select distinct(p.id), p.titulo, p.poster
+					from pelicula p
+					left join actor_pelicula ap on ap.pelicula_id = p.id
+					left join director_pelicula dp on dp.pelicula_id = p.id
+					where 1=1 AND`;					
+
+					if(datos[0].genero_id != 0){
+						finalPeliculasQuery += " p.genero_id = " + datos[0].genero_id + " AND";
 					}
+		
+					if(datos[0].director_id != 0){
+						finalPeliculasQuery += " dp.director_id = " + datos[0].director_id + " AND";
+					}
+		
+					if(datos[0].actor_id != 0){
+						finalPeliculasQuery += " ap.actor_id = " + datos[0].actor_id + " AND";
+					}
+		
+					finalPeliculasQuery = finalPeliculasQuery.slice(0,-3);
+					
+					finalPeliculasQuery += " order by rand() limit 2";
 
-					database.query(queryString,function(error,datos){			
+					//console.log("-|| QueryString: " + finalPeliculasQuery);
+
+					database.query(finalPeliculasQuery,function(error,datos){			
 						if(error){
 							return response.send(500,"ERRRRRROORRRRRR")
 						}
@@ -102,6 +124,7 @@ var controladorFunciones = {
 						response.send(200,resultados);
 	
 					});
+					
 				
 				});					
 
@@ -154,7 +177,7 @@ var controladorFunciones = {
 		order by podio DESC
 		limit 3`;
 		
-		console.log("-| QUERY: " + queryString);
+		//console.log("-| QUERY: " + queryString);
 		
 
 
@@ -308,6 +331,25 @@ var controladorFunciones = {
 		
 		//var queryString = "DELETE FROM competencia WHERE id="+idCompetencia;
 		var queryString = "UPDATE competencia SET activa = 0 WHERE id="+idCompetencia+";";
+
+		
+		database.query(queryString,function(error,datos){
+			if(error){
+				return response.status(500).send("ERROR DESCONOCIDO DE DATABASE")
+			}
+
+			response.send(200); // NO DEVOLVEMOS MENSAJE, EN ESTE CASO, PORQUE EL CLIENTE (reiniciar.JS) NO LEE EL MENSAJE, SOLO EL CODIGO DE ERROR (success:)
+			
+		});
+	},
+
+	editarCompetencia: function(request, response){
+		var idCompetencia = request.params.idCompetencia;
+		var nuevoNombre = request.body.nombre;
+		console.log("-|| EDITAR COMPETENCIA: " +  idCompetencia);						
+		
+		//var queryString = "DELETE FROM competencia WHERE id="+idCompetencia;
+		var queryString = "UPDATE competencia SET nombre = '"+ nuevoNombre +"' WHERE id="+ idCompetencia +";";
 
 		
 		database.query(queryString,function(error,datos){
