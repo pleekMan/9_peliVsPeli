@@ -145,15 +145,50 @@ SELECT di.director_id, p.* from pelicula p
 	right join director_pelicula di on di.director_id = ;
 	-- WHERE p.id is not null group by p.id;
 
-
-select distinct(p.id) from pelicula p
+////;
+select distinct(p.id), p.titulo, p.poster from pelicula p
 	left join actor_pelicula ap on ap.pelicula_id = p.id
 	left join director_pelicula dp on dp.pelicula_id = p.id
-	where ap.actor_id = 123 AND dp.director_id = 123 and genero = 123
-	limit 100
+	-- where ap.actor_id = 0 AND dp.director_id = 3364 and p.genero_id = 0
+	-- where dp.director_id = 3364 and p.genero_id = 2
+	where p.genero_id = 5
+	-- where dp.director_id = 3364
+	-- where 1=1
+	order by rand()
+	limit 2;
 
 ////////////////////////;
+
+
 select competencia.genero_id, competencia.director_id, competencia.actor_id from competencia where competencia.id = 18;
 
 
-UPDATE competencia SET nombre = "+ nuevoNombre +" WHERE id="+ idCompetencia +";"
+/////////////////;
+
+-- select competencia.nombre, genero.nombre as GenreName, actor.nombre as ActorName, director.nombre as DirName
+select competencia.nombre as competenciaName, genero.nombre as generoName, director.nombre as directorName, actor.nombre as actorName
+	from competencia
+	-- join genero on competencia.genero_id = genero.id
+	-- join actor on actor.id = competencia.actor_id
+	-- join director on director.id = competencia.director_id
+	where competencia.id = 18
+	limit 100;
+
+////////////////////;
+
+select competencia.nombre as competenciaName from competencia where competencia.id = 1 group by id_competencia, id_pelicula limit 1;
+
+//////////;
+
+select id_pelicula, competencia.nombre as comp_nombre, genero.nombre as genero, actor.nombre as actorNombre, director.nombre as directorNombre  
+		from voto
+		join pelicula ON voto.id_pelicula = pelicula.id
+		join competencia ON voto.id_competencia = competencia.id
+		join genero ON pelicula.genero_id = genero.id
+		left join actor_pelicula ON actor_pelicula.pelicula_id = pelicula.id
+		left join actor on actor.id = actor_pelicula.actor_id
+		left join director_pelicula ON director_pelicula.pelicula_id = pelicula.id
+		left join director on director_pelicula.director_id = director.id
+		where voto.id_competencia = 5
+		group by id_competencia, id_pelicula
+		limit 1;

@@ -17,43 +17,79 @@ var controladorFunciones = {
 	getDatosDeCompetencia: function(request, response){
 		
 		var idCompetencia = request.params.id;
-		/*
-		var queryString = `select id_pelicula, competencia.nombre as comp_nombre, genero.nombre as genero, actor.nombre as actorNombre, director.nombre as directorNombre  
-		from voto
-		join pelicula ON voto.id_pelicula = pelicula.id
-		join competencia ON voto.id_competencia = competencia.id
-		join genero ON pelicula.genero_id = genero.id
-		join actor_pelicula ON actor_pelicula.pelicula_id = pelicula.id
-		join actor on actor.id = actor_pelicula.actor_id
-		join director_pelicula ON director_pelicula.pelicula_id = pelicula.id
-		join director on director_pelicula.director_id = director.id
-		where voto.id_competencia = ${idCompetencia}
-		group by id_competencia, id_pelicula
-		limit 1;`;
-		*/
 
-		var getDatosIDs = "select competencia.genero_id, competencia.director_id, competencia.actor_id from competencia where competencia.id =" + competenciaId;
+		var getDatosIDs = "select competencia.genero_id, competencia.director_id, competencia.actor_id from competencia where competencia.id =" + idCompetencia;		
 
 		database.query(getDatosIDs, function(error,datos){
 			if(error){
-				return response.status(500).send("ERRRRRROORRRRRR")
-			}
-			//console.log(datos[0]);
-
-			var toFrontEnd = {};
-
-			if(datos.length != 0){
-
-				toFrontEnd.nombre = datos[0].comp_nombre;
-				toFrontEnd.genero_nombre = datos[0].genero;
-				toFrontEnd.actor_nombre = datos[0].actorNombre;
-				toFrontEnd.director_nombre = datos[0].directorNombre;
-
-				return response.send(200, toFrontEnd);
-			} else {
-				return response.status(404).send("DATOS DE COMPETENCIA VACIOS")								
+				return response.status(500).send("ERROR AL BUSCAR PARAMETROS DE LA COMPETENCIA")
 			}
 			
+			//console.log(datos[0]);
+			//return response.send(200, datos);
+			
+			var competenciaParams = {
+				generoLink: datos[0].genero_id,
+				directorLink: datos[0].director_id,
+				actorLink: datos[0].actor_id,
+			}
+			
+			// CONSTRUIR LA QUERY BASADO EN LOS ids/PARAMETROS DE LA COMPETENCIA
+			// El SELECT - JOIN - WHERE
+			var selectConstruct = "select competencia.nombre";
+			var joinConstruct = "";
+			var whereConstruct = " where competencia.id = " + idCompetencia;
+			var finalQueryString ="";
+
+			if(competenciaParams.generoLink != 0){
+				selectConstruct += ", genero.nombre as genero_nombre";
+				joinConstruct += " join genero on competencia.genero_id = genero.id";
+				whereConstruct += " and genero.id = " + competenciaParams.generoLink;
+			}
+
+			if(competenciaParams.directorLink != 0){
+				selectConstruct += ", director.nombre as director_nombre";
+				joinConstruct += " join director on director.id = competencia.director_id";
+				whereConstruct += " and director.id = " + competenciaParams.directorLink;
+			}
+
+			if(competenciaParams.actorLink != 0){
+				selectConstruct += ", actor.nombre as actor_nombre";
+				joinConstruct += " join actor on actor.id = competencia.actor_id";
+				whereConstruct += " and actor.id = " + competenciaParams.actorLink;
+			}
+
+			selectConstruct += " from competencia"
+
+			finalQueryString += selectConstruct + joinConstruct + whereConstruct;
+			finalQueryString += " limit 1"
+
+			console.log("-|| FINAL QUERY: " + finalQueryString);
+
+			//return response.send(200, datos);
+
+			// ARMADA LA QUERY PARA PEDIR DATOS:
+			database.query(finalQueryString, function(error,datosCompetencia){
+				if(error){
+					return response.status(500).send("ERROR AL BUSCAR LOS DATOS DE LA COMPETENCIA")
+				}
+				
+				//console.log("-|| Datos de Competencia: " + datosCompetencia[0].nombre);
+				var toFrontEnd = {};
+
+				if(datosCompetencia.length != 0){
+
+					toFrontEnd.nombre = datosCompetencia[0].nombre;
+					toFrontEnd.genero_nombre = datosCompetencia[0].genero_nombre;
+					toFrontEnd.actor_nombre = datosCompetencia[0].actor_nombre;
+					toFrontEnd.director_nombre = datosCompetencia[0].director_nombre;
+
+					return response.send(200, toFrontEnd);
+				} else {
+					return response.status(404).send("DATOS DE COMPETENCIA VACIOS")								
+				}
+				
+			});
 			
 			
 		});
